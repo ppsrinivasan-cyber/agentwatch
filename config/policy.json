@@ -1,0 +1,62 @@
+{
+  "organization": "Mal",
+  "approved_llm_endpoints": [
+    "llm-gateway.mal.internal",
+    "api.githubcopilot.com",
+    "copilot-proxy.githubusercontent.com",
+    "api2.cursor.sh"
+  ],
+  "trusted_domains": [
+    "github.com", "api.github.com", "raw.githubusercontent.com", "objects.githubusercontent.com",
+    "pypi.org", "files.pythonhosted.org", "registry.npmjs.org", "registry.yarnpkg.com",
+    "artifactory.mal.internal", "git.mal.internal", "llm-gateway.mal.internal",
+    "api.githubcopilot.com", "api2.cursor.sh", "docs.python.org", "developer.mozilla.org",
+    "stackoverflow.com", "localhost", "127.0.0.1"
+  ],
+  "exfil_domains": [
+    "pastebin.com", "paste.ee", "hastebin.com", "ghostbin.co", "0x0.st", "transfer.sh",
+    "webhook.site", "requestbin.net", "pipedream.net", "ngrok.io", "ngrok-free.app", "ngrok.app",
+    "trycloudflare.com", "interact.sh", "oast.fun", "oast.pro", "oast.live", "burpcollaborator.net",
+    "discord.com", "discordapp.com", "api.telegram.org", "file.io", "anonfiles.com"
+  ],
+  "internal_package_prefixes": ["mal-", "mal_", "@mal/"],
+  "internal_registries": ["artifactory.mal.internal"],
+  "trusted_git_remotes": ["github.com/mal/", "github.com/mal-", "git.mal.internal/"],
+  "protected_branches": ["main", "master", "production", "release/*"],
+  "popular_packages": {
+    "pypi": ["requests", "numpy", "pandas", "flask", "django", "fastapi", "pydantic", "boto3", "urllib3",
+             "colorama", "python-dateutil", "pyyaml", "jellyfish", "sqlalchemy", "pytest", "uvicorn",
+             "httpx", "scikit-learn", "torch", "tensorflow", "cryptography", "jinja2", "click", "rich",
+             "beautifulsoup4", "openai", "anthropic", "setuptools", "matplotlib", "redis", "celery",
+             "psycopg2-binary", "aiohttp", "pillow", "tqdm", "transformers"],
+    "npm": ["react", "react-dom", "lodash", "express", "axios", "chalk", "commander", "moment", "dayjs",
+            "typescript", "webpack", "vite", "next", "vue", "jest", "eslint", "prettier", "cross-env",
+            "dotenv", "uuid", "zod", "event-stream", "ua-parser-js", "node-fetch", "debug", "yargs",
+            "tailwindcss", "jsonwebtoken", "bcrypt", "mongoose", "socket.io", "colors"]
+  },
+  "registry_snapshot": {
+    "pypi": ["structlog", "tenacity", "orjson", "pytest-cov", "black", "ruff", "mypy", "alembic",
+             "python-jose", "passlib", "stripe", "sentry-sdk", "pyjwt", "gunicorn", "marshmallow"],
+    "npm": ["@types/node", "@types/react", "clsx", "date-fns", "react-query", "@tanstack/react-query",
+            "framer-motion", "supertest", "nodemon", "ts-node", "vitest", "@testing-library/react"]
+  },
+  "known_malicious_packages": {
+    "pypi": ["colourama", "python3-dateutil", "jeilyfish", "python-sqlite", "djanga", "urlib3",
+             "request-oauthlib", "setup-tools", "pytorch-nightly-cpu"],
+    "npm": ["crossenv", "cross-env.js", "flatmap-stream", "discord.dll", "electorn", "loadyaml",
+            "mongose", "babelcli", "d3.js", "jquery.js"]
+  },
+  "shell_allowlist": [
+    "ls", "cat src/", "cd", "pwd", "echo", "grep", "rg", "find .", "pytest", "python -m pytest",
+    "npm test", "npm run", "npx tsc", "npx eslint", "yarn test", "go test", "go build", "cargo test",
+    "cargo build", "make", "mkdir", "touch", "git status", "git diff", "git log", "git add", "git commit",
+    "git checkout", "git switch", "git branch", "git push", "git pull", "git fetch", "pip install",
+    "npm install", "terraform fmt", "terraform validate", "terraform plan", "docker build", "node ", "python "
+  ],
+  "response_policy": {
+    "quarantine_min_severity": "high",
+    "webhook_min_severity": "high",
+    "flag_file_min_severity": "medium",
+    "suspend_session_min_severity": "critical"
+  }
+}

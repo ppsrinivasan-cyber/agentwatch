@@ -1,0 +1,11 @@
+# One-click deploy on Render (free tier): New + > Blueprint > select this repo.
+# Single container; webhooks go to the built-in receiver at /api/mock-webhook.
+services:
+  - type: web
+    name: agentwatch
+    runtime: docker
+    plan: free
+    healthCheckPath: /healthz
+    envVars:
+      - key: STREAM_DELAY
+        value: "0.4"

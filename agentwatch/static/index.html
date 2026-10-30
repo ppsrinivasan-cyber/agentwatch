@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AgentWatch – coding-agent security monitor</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,400..800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper: #eef2f5; --surface: #ffffff; --ink: #17212b; --muted: #5a6876; --rule: #d3dbe3; --hover: #e5ebf0;
+  --accent: #2f4cc4; --accent-ink: #ffffff;
+  --critical: #b0124f; --high: #c2410c; --medium: #a16207; --low: #0f766e; --info: #64748b;
+  --critical-bg: #fbe7ef; --high-bg: #fdeee5; --medium-bg: #fbf3dc; --low-bg: #e0f3f0;
+  --code-bg: #f4f6f9; --seg-a: #24323f; --seg-b: #34475a; --seg-ink: #ffffff;
+  --sans: "Archivo", "Helvetica Neue", Arial, system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #141a21; --surface: #1b232c; --ink: #dce4eb; --muted: #8c9baa; --rule: #2b3642; --hover: #222c37;
+    --accent: #8ea2ff; --accent-ink: #10162a;
+    --critical: #ff5c93; --high: #ff8a4c; --medium: #e6b54a; --low: #3fc7b5; --info: #94a3b8;
+    --critical-bg: #3a1726; --high-bg: #3a2216; --medium-bg: #352a12; --low-bg: #123330;
+    --code-bg: #141b22; --seg-a: #c9d4de; --seg-b: #a9b8c6; --seg-ink: #10171e;
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--paper); color: var(--ink); font: 15px/1.5 var(--sans); }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.wrap { max-width: 1440px; margin: 0 auto; padding: 20px 24px 48px; }
+
+/* Header */
+header.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px; padding-bottom: 14px; border-bottom: 2px solid var(--ink); }
+.brand h1 { margin: 0; font-size: 30px; line-height: 1; font-weight: 800; font-stretch: 78%; letter-spacing: -0.01em; }
+.brand p { margin: 6px 0 0; color: var(--muted); font-size: 14px; }
+.live { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; font-size: 14px; color: var(--muted); }
+.pulse { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--low); margin-right: 6px; vertical-align: 1px; }
+.pulse.off { background: var(--critical); }
+@media (prefers-reduced-motion: no-preference) { .pulse.streaming { animation: beat 1.2s ease-in-out infinite; } }
+@keyframes beat { 50% { opacity: .25; } }
+.btn { border: 1px solid var(--rule); background: var(--surface); padding: 7px 14px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; }
+.btn:hover { background: var(--hover); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.primary:hover { filter: brightness(1.08); }
+
+/* Summary line */
+.summary { display: flex; flex-wrap: wrap; gap: 6px 28px; padding: 16px 0 10px; align-items: baseline; }
+.summary .n { font-size: 26px; font-weight: 750; font-stretch: 85%; font-variant-numeric: tabular-nums; margin-right: 6px; }
+.summary .l { color: var(--muted); font-size: 14px; }
+.summary .sev-critical .n { color: var(--critical); } .summary .sev-high .n { color: var(--high); }
+.summary .sev-medium .n { color: var(--medium); } .summary .sev-low .n { color: var(--low); }
+
+/* Threat strip */
+.strip-head { display: flex; justify-content: space-between; align-items: baseline; margin-top: 8px; }
+.strip-head h2, section h2 { font-size: 17px; font-weight: 700; font-stretch: 88%; margin: 0; }
+.strip-head span { color: var(--muted); font-size: 13px; }
+.strip { display: flex; height: 52px; margin: 8px 0 10px; border-radius: 4px; overflow: hidden; background: var(--rule); gap: 2px; }
+.strip { height: 60px; }
+.strip button { border: 0; padding: 0 10px 8px; min-width: 22px; cursor: pointer; color: var(--seg-ink); background: var(--seg-a); text-align: left; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 13px; font-weight: 600; position: relative; }
+.strip button:nth-child(even) { background: var(--seg-b); }
+.strip button .c { font-size: 21px; font-weight: 800; font-stretch: 80%; margin-right: 6px; vertical-align: -2px; }
+.strip button .mix { position: absolute; left: 0; right: 0; bottom: 0; height: 8px; }
+.strip button[aria-pressed="true"] { outline: 3px solid var(--accent); outline-offset: -3px; }
+.strip button:hover { filter: brightness(1.15); }
+@media (max-width: 760px) { .strip button .lbl { display: none; } .strip button { padding: 0 4px 8px; text-align: center; text-overflow: clip; } .strip-head span { display: none; } }
+.strip .empty { flex: 1; display: flex; align-items: center; padding: 0 14px; color: var(--muted); background: var(--surface); font-size: 14px; }
+.legend { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 2px 20px; margin: 0 0 18px; padding: 0; list-style: none; }
+.legend button { display: flex; width: 100%; justify-content: space-between; gap: 10px; border: 0; background: none; padding: 5px 4px; cursor: pointer; text-align: left; font-size: 14px; border-bottom: 1px solid var(--rule); }
+.legend button:hover { background: var(--hover); }
+.legend button[aria-pressed="true"] { font-weight: 700; }
+.legend .sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 8px; vertical-align: 0; }
+.legend .cnt { font-variant-numeric: tabular-nums; color: var(--muted); }
+
+/* Main grid */
+.main { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 1000px) { .main { grid-template-columns: 1fr; } }
+.panel { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; }
+
+/* Filters */
+.filters { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; padding: 12px 14px; border-bottom: 1px solid var(--rule); }
+.sevs { display: flex; gap: 4px; }
+.sevs button { border: 1px solid var(--rule); background: var(--surface); border-radius: 999px; padding: 3px 11px; font-size: 13px; cursor: pointer; font-weight: 600; }
+.sevs button[aria-pressed="true"][data-sev="critical"] { background: var(--critical); border-color: var(--critical); color: #fff; }
+.sevs button[aria-pressed="true"][data-sev="high"] { background: var(--high); border-color: var(--high); color: #fff; }
+.sevs button[aria-pressed="true"][data-sev="medium"] { background: var(--medium); border-color: var(--medium); color: #fff; }
+.sevs button[aria-pressed="true"][data-sev="low"] { background: var(--low); border-color: var(--low); color: #fff; }
+.filters select, .filters input { border: 1px solid var(--rule); background: var(--surface); border-radius: 6px; padding: 5px 8px; font-size: 14px; max-width: 100%; }
+.filters input[type="search"] { flex: 1 1 180px; min-width: 140px; }
+.feed-meta { display: flex; justify-content: space-between; padding: 8px 14px; color: var(--muted); font-size: 13px; border-bottom: 1px solid var(--rule); }
+.linkish { border: 0; background: none; color: var(--accent); cursor: pointer; padding: 0; font-size: 13px; font-weight: 600; }
+
+/* Feed */
+.feed { list-style: none; margin: 0; padding: 0; max-height: 70vh; overflow-y: auto; }
+.feed li + li { border-top: 1px solid var(--rule); }
+.row { display: grid; grid-template-columns: 4px 1fr; width: 100%; border: 0; background: none; padding: 0; text-align: left; cursor: pointer; }
+.row:hover { background: var(--hover); }
+.row[aria-current="true"] { background: var(--hover); }
+.row .rail { background: var(--info); }
+.row .body { padding: 10px 14px; min-width: 0; }
+.row .l1 { display: flex; gap: 10px; align-items: baseline; }
+.row .sev { font-size: 12px; font-weight: 700; min-width: 58px; }
+.row .t { font-weight: 600; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row .when { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.row .l2 { color: var(--muted); font-size: 13px; margin-top: 2px; padding-left: 68px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row .status { font-size: 11px; font-weight: 700; border: 1px solid var(--rule); border-radius: 4px; padding: 0 5px; color: var(--muted); }
+.s-critical { color: var(--critical); } .s-high { color: var(--high); } .s-medium { color: var(--medium); } .s-low { color: var(--low); }
+.r-critical { background: var(--critical) !important; } .r-high { background: var(--high) !important; }
+.r-medium { background: var(--medium) !important; } .r-low { background: var(--low) !important; }
+.feed .none { padding: 28px 16px; color: var(--muted); }
+
+/* Detail */
+.detail { position: sticky; top: 16px; max-height: calc(100vh - 32px); overflow-y: auto; }
+.detail .inner { padding: 18px 20px 22px; }
+.detail .placeholder { padding: 40px 24px; color: var(--muted); }
+.badge { display: inline-block; font-size: 12px; font-weight: 700; padding: 2px 9px; border-radius: 4px; }
+.b-critical { background: var(--critical-bg); color: var(--critical); } .b-high { background: var(--high-bg); color: var(--high); }
+.b-medium { background: var(--medium-bg); color: var(--medium); } .b-low { background: var(--low-bg); color: var(--low); }
+.detail h3 { font-size: 20px; line-height: 1.25; margin: 10px 0 4px; font-weight: 700; font-stretch: 88%; }
+.detail .sub { color: var(--muted); font-size: 13px; margin-bottom: 14px; }
+.detail h4 { font-size: 14px; margin: 18px 0 6px; font-weight: 700; }
+.action { border-left: 4px solid var(--accent); background: var(--code-bg); padding: 10px 12px; border-radius: 0 6px 6px 0; }
+pre.ev { font: 12.5px/1.55 var(--mono); background: var(--code-bg); border: 1px solid var(--rule); border-radius: 6px; padding: 10px 12px; margin: 0; white-space: pre-wrap; word-break: break-word; max-height: 260px; overflow: auto; }
+.kv { display: grid; grid-template-columns: 110px 1fr; gap: 3px 12px; font-size: 13.5px; margin: 0; }
+.kv dt { color: var(--muted); } .kv dd { margin: 0; overflow-wrap: anywhere; }
+table.mitre { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+table.mitre td { padding: 5px 6px 5px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+table.mitre td:first-child { font-family: var(--mono); font-size: 12.5px; white-space: nowrap; font-weight: 600; }
+table.mitre .fw { color: var(--muted); font-size: 12px; }
+.tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.tag { font-size: 12px; border: 1px solid var(--rule); border-radius: 4px; padding: 0 6px; }
+.acts { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 16px; }
+ul.resp { list-style: none; padding: 0; margin: 0; font-size: 13.5px; }
+ul.resp li { padding: 4px 0; border-bottom: 1px solid var(--rule); display: grid; grid-template-columns: 120px 80px 1fr; gap: 8px; }
+.st-done, .st-delivered { color: var(--low); font-weight: 600; } .st-failed { color: var(--critical); font-weight: 600; }
+.st-queued, .st-skipped { color: var(--muted); font-weight: 600; }
+details.raw summary { cursor: pointer; color: var(--accent); font-size: 13px; font-weight: 600; margin-top: 16px; }
+.close-detail { display: none; }
+@media (max-width: 1000px) {
+  .detail { position: fixed; inset: 0; z-index: 20; max-height: none; border-radius: 0; display: none; padding-top: env(safe-area-inset-top, 0px); }
+  .detail.open { display: block; }
+  .close-detail { display: inline-block; }
+}
+
+/* Lower sections */
+.lower { display: grid; grid-template-columns: 1.4fr 1fr; gap: 20px; margin-top: 20px; }
+@media (max-width: 1000px) { .lower { grid-template-columns: 1fr; } }
+.lower .panel { padding: 14px 16px; }
+.log { list-style: none; margin: 10px 0 0; padding: 0; max-height: 300px; overflow-y: auto; font-size: 13.5px; }
+.log li { display: grid; grid-template-columns: 74px 128px 78px 1fr; gap: 8px; padding: 5px 0; border-top: 1px solid var(--rule); }
+.log .tm { color: var(--muted); font-variant-numeric: tabular-nums; }
+.log .ac { font-family: var(--mono); font-size: 12.5px; }
+.contained li { grid-template-columns: 1fr; }
+.contained .who { font-weight: 600; } .contained .why { color: var(--muted); }
+@media (max-width: 640px) {
+  .wrap { padding: 14px 12px 40px; }
+  .log li { grid-template-columns: 64px 1fr; }
+  .log li .st, .log li .dt { grid-column: 2; }
+  .row .l2 { padding-left: 0; }
+  ul.resp li { grid-template-columns: 1fr; }
+}
+footer { margin-top: 28px; color: var(--muted); font-size: 13px; }
+footer a { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>AgentWatch</h1>
+      <p>Security monitor for Mal’s AI coding agents: Copilot, Cursor and the internal code assistant.</p>
+    </div>
+    <div class="live">
+      <span id="liveState"><span class="pulse" id="pulse"></span><span id="liveText">Connecting…</span></span>
+      <button class="btn primary" id="replayBtn" type="button">Replay sample log</button>
+    </div>
+  </header>
+
+  <div class="summary" id="summary" aria-live="polite"></div>
+
+  <div class="strip-head"><h2>Alerts by threat category</h2><span>Bar width is alert count; the coloured edge shows severity mix. Select a category to filter.</span></div>
+  <div class="strip" id="strip" role="group" aria-label="Alerts by category"></div>
+  <ul class="legend" id="legend"></ul>
+
+  <div class="main">
+    <section class="panel" aria-labelledby="feedTitle">
+      <h2 id="feedTitle" style="padding:12px 14px 0">Alert feed</h2>
+      <div class="filters">
+        <div class="sevs" role="group" aria-label="Severity">
+          <button type="button" data-sev="critical" aria-pressed="false">Critical</button>
+          <button type="button" data-sev="high" aria-pressed="false">High</button>
+          <button type="button" data-sev="medium" aria-pressed="false">Medium</button>
+          <button type="button" data-sev="low" aria-pressed="false">Low</button>
+        </div>
+        <select id="fCategory" aria-label="Category"><option value="">All categories</option></select>
+        <select id="fStatus" aria-label="Status">
+          <option value="">Any status</option><option value="open">Open</option><option value="acknowledged">Acknowledged</option>
+          <option value="resolved">Resolved</option><option value="false_positive">False positive</option>
+        </select>
+        <select id="fAgent" aria-label="Agent"><option value="">All agents</option></select>
+        <input type="search" id="fQuery" placeholder="Search user, repo, technique, evidence…" aria-label="Search alerts">
+      </div>
+      <div class="feed-meta"><span id="feedCount">Loading…</span><button class="linkish" id="clearBtn" type="button">Clear filters</button></div>
+      <ul class="feed" id="feed"></ul>
+    </section>
+
+    <aside class="panel detail" id="detail" aria-label="Alert detail">
+      <div class="placeholder" id="placeholder">Select an alert to see its evidence, MITRE mapping, recommended action and the automated responses already taken.</div>
+      <div class="inner" id="detailInner" hidden></div>
+    </aside>
+  </div>
+
+  <div class="lower">
+    <section class="panel" aria-labelledby="respTitle">
+      <h2 id="respTitle">Automated responses</h2>
+      <ul class="log" id="respLog"></ul>
+    </section>
+    <section class="panel" aria-labelledby="contTitle">
+      <h2 id="contTitle">Contained sessions and flagged files</h2>
+      <ul class="log contained" id="contained"></ul>
+    </section>
+  </div>
+
+  <footer>
+    API: <a href="/api/alerts">/api/alerts</a>, <a href="/api/stats">/api/stats</a>, <a href="/api/rules">/api/rules</a>, <a href="/api/responses">/api/responses</a>.
+    Ingest more events with <code>POST /api/events</code> (JSON or NDJSON).
+  </footer>
+</div>
+
+<script>
+(() => {
+  const SEV = ["critical", "high", "medium", "low"];
+  const SEV_RANK = { critical: 4, high: 3, medium: 2, low: 1, info: 0 };
+  const state = { sev: new Set(), category: "", status: "", agent: "", q: "", selected: null, alerts: [], stats: null, lastDetailKey: "" };
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const time = (iso) => { if (!iso) return ""; const d = new Date(iso); return isNaN(d) ? iso : d.toISOString().slice(11, 19); };
+  const cssVar = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+  async function api(path, opts) {
+    const r = await fetch(path, opts);
+    if (!r.ok) throw new Error(path + " returned " + r.status);
+    return r.json();
+  }
+
+  function qs() {
+    const p = new URLSearchParams();
+    if (state.sev.size) p.set("severity", [...state.sev].join(","));
+    if (state.category) p.set("category", state.category);
+    if (state.status) p.set("status", state.status);
+    if (state.agent) p.set("agent", state.agent);
+    if (state.q) p.set("q", state.q);
+    return p.toString();
+  }
+
+  function renderSummary(s) {
+    const open = s.open_by_severity || {};
+    const webhooks = (s.webhook_status || {}).delivered || 0;
+    const items = [
+      [s.alerts_open, "open alerts", ""],
+      ...SEV.map((k) => [open[k] || 0, k, "sev-" + k]),
+      [s.blocked_sessions.length, "sessions contained", ""],
+      [s.flagged_files.length, "files flagged", ""],
+      [webhooks, "webhooks delivered", ""],
+      [s.events_processed, "events processed", ""],
+    ];
+    $("summary").innerHTML = items.map(([n, l, c]) => `<div class="${c}"><span class="n">${n}</span><span class="l">${esc(l)}</span></div>`).join("");
+  }
+
+  function worstSev(category) {
+    let w = "low";
+    for (const a of state.allAlerts || []) if (a.category === category && SEV_RANK[a.severity] > SEV_RANK[w]) w = a.severity;
+    return w;
+  }
+
+  function sevMix(category) {
+    const m = { critical: 0, high: 0, medium: 0, low: 0 };
+    for (const a of state.allAlerts || []) if (a.category === category && m[a.severity] !== undefined) m[a.severity]++;
+    return m;
+  }
+  function mixGradient(m) {
+    const total = SEV.reduce((t, k) => t + m[k], 0) || 1;
+    let at = 0; const stops = [];
+    for (const k of SEV) { if (!m[k]) continue; const end = at + (m[k] / total) * 100; stops.push(`${cssVar("--" + k)} ${at}% ${end}%`); at = end; }
+    return stops.length ? `linear-gradient(to right, ${stops.join(", ")})` : "transparent";
+  }
+
+  function renderStrip(s) {
+    const cats = Object.entries(s.by_category || {});
+    const total = cats.reduce((t, [, n]) => t + n, 0);
+    const strip = $("strip");
+    if (!total) {
+      strip.innerHTML = `<div class="empty">No alerts yet. Events stream in automatically, or select Replay sample log.</div>`;
+      $("legend").innerHTML = "";
+    } else {
+      strip.innerHTML = cats.map(([c, n]) => {
+        const mix = sevMix(c);
+        const parts = SEV.filter((k) => mix[k]).map((k) => `${mix[k]} ${k}`).join(", ");
+        return `<button type="button" style="flex:${n} 1 0" data-cat="${esc(c)}" aria-pressed="${state.category === c}" title="${esc(c)}: ${n} alerts (${parts})" aria-label="${esc(c)}, ${n} alerts: ${parts}"><span class="c">${n}</span><span class="lbl">${esc(c)}</span><span class="mix" style="background:${mixGradient(mix)}"></span></button>`;
+      }).join("");
+      $("legend").innerHTML = cats.map(([c, n]) => {
+        const sev = worstSev(c);
+        return `<li><button type="button" data-cat="${esc(c)}" aria-pressed="${state.category === c}"><span><span class="sw" style="background:${cssVar("--" + sev)}"></span>${esc(c)}</span><span class="cnt">${n}</span></button></li>`;
+      }).join("");
+    }
+    const sel = $("fCategory"), cur = sel.value;
+    const opts = (s.categories || []).map((c) => `<option value="${esc(c)}">${esc(c)} (${(s.by_category || {})[c] || 0})</option>`).join("");
+    sel.innerHTML = `<option value="">All categories</option>` + opts; sel.value = state.category || cur;
+    const ag = $("fAgent"), curA = ag.value;
+    ag.innerHTML = `<option value="">All agents</option>` + (s.agents || []).map((a) => `<option>${esc(a)}</option>`).join("");
+    ag.value = state.agent || curA;
+  }
+
+  function renderFeed() {
+    const list = state.alerts;
+    const total = state.stats ? state.stats.alerts_total : list.length;
+    $("feedCount").textContent = `Showing ${list.length} of ${total} alerts`;
+    if (!list.length) {
+      $("feed").innerHTML = `<li class="none">${total ? "No alerts match these filters. Clear filters to see everything." : "Waiting for agent activity…"}</li>`;
+      return;
+    }
+    $("feed").innerHTML = list.map((a) => {
+      const tech = (a.mitre || []).map((t) => t.technique_id).join(", ");
+      const st = a.status !== "open" ? ` <span class="status">${esc(a.status.replace("_", " "))}</span>` : "";
+      const occ = a.occurrences > 1 ? ` (×${a.occurrences})` : "";
+      return `<li><button type="button" class="row" data-id="${a.alert_id}" aria-current="${state.selected === a.alert_id}">
+        <span class="rail r-${a.severity}"></span>
+        <span class="body">
+          <span class="l1"><span class="sev s-${a.severity}">${esc(a.severity)}</span><span class="t">${esc(a.title)}${occ}</span>${st}<span class="when">${time(a.event_time)}</span></span>
+          <span class="l2" style="display:block">${esc(a.rule_id)}, ${esc((a.context.user || "").split("@")[0])} with ${esc(a.context.agent)} in ${esc(a.context.repo)}, ${esc(tech)}</span>
+        </span></button></li>`;
+    }).join("");
+  }
+
+  function renderDetail() {
+    const a = (state.allAlerts || []).find((x) => x.alert_id === state.selected) || state.alerts.find((x) => x.alert_id === state.selected);
+    const inner = $("detailInner");
+    if (!a) { inner.hidden = true; $("placeholder").hidden = false; state.lastDetailKey = ""; return; }
+    const key = a.alert_id + a.status + a.occurrences + JSON.stringify(a.response_actions.map((r) => r.status));
+    if (key === state.lastDetailKey) return;
+    state.lastDetailKey = key;
+    $("placeholder").hidden = true; inner.hidden = false;
+    const c = a.context;
+    const mitre = (a.mitre || []).map((t) => `<tr><td>${esc(t.technique_id)}</td><td>${esc(t.technique_name)}<div class="fw">${esc(t.framework)}, ${esc(t.tactic)}</div></td></tr>`).join("");
+    const resp = a.response_actions.length
+      ? a.response_actions.map((r) => `<li><span class="ac">${esc(r.action)}</span><span class="st-${esc(r.status)}">${esc(r.status)}</span><span>${esc(r.detail)}</span></li>`).join("")
+      : `<li><span>None. Severity is below the response thresholds in config/policy.json.</span></li>`;
+    const matched = (a.evidence.matched || []).map((m) => `<span class="tag">${esc(m)}</span>`).join("");
+    inner.innerHTML = `
+      <button class="btn close-detail" type="button" id="closeDetail">Back to feed</button>
+      <div style="margin-top:4px"><span class="badge b-${a.severity}">${esc(a.severity)}</span> <span class="badge" style="border:1px solid var(--rule)">${esc(a.status.replace("_", " "))}</span></div>
+      <h3>${esc(a.title)}</h3>
+      <div class="sub">${esc(a.alert_id)}, rule ${esc(a.rule_id)} (${esc(a.rule_name)}), confidence ${Math.round(a.confidence * 100)}%</div>
+      <h4>Recommended immediate action</h4>
+      <div class="action">${esc(a.recommended_action)}</div>
+      <h4>Evidence from ${esc(a.evidence.event_id)} (${esc(a.evidence.event_type)}, field ${esc(a.evidence.field)})</h4>
+      <pre class="ev">${esc(a.evidence.snippet)}</pre>
+      ${matched ? `<div class="tags" style="margin-top:8px">${matched}</div>` : ""}
+      <h4>MITRE mapping</h4>
+      <table class="mitre">${mitre}</table>
+      <h4>Context</h4>
+      <dl class="kv">
+        <dt>Category</dt><dd>${esc(a.category)}</dd>
+        <dt>User</dt><dd>${esc(c.user)}</dd>
+        <dt>Agent</dt><dd>${esc(c.agent)} ${esc(c.agent_version || "")} (${esc(c.model || "unknown model")})</dd>
+        <dt>Session</dt><dd>${esc(c.session_id)}</dd>
+        <dt>Repository</dt><dd>${esc(c.repo)}</dd>
+        <dt>Host</dt><dd>${esc(c.host)}</dd>
+        ${c.file_path ? `<dt>File</dt><dd>${esc(c.file_path)}</dd>` : ""}
+        <dt>Event time</dt><dd>${esc(a.event_time)}${a.occurrences > 1 ? `, seen ${a.occurrences} times (last ${esc(a.last_seen)})` : ""}</dd>
+      </dl>
+      <h4>Automated responses</h4>
+      <ul class="resp">${resp}</ul>
+      <div class="acts">
+        ${a.status !== "acknowledged" ? `<button class="btn" type="button" data-status="acknowledged">Acknowledge</button>` : ""}
+        ${a.status !== "resolved" ? `<button class="btn primary" type="button" data-status="resolved">Resolve</button>` : ""}
+        ${a.status !== "false_positive" ? `<button class="btn" type="button" data-status="false_positive">Mark false positive</button>` : ""}
+        ${a.status !== "open" ? `<button class="btn" type="button" data-status="open">Reopen</button>` : ""}
+      </div>
+      <details class="raw"><summary>Raw alert JSON</summary><pre class="ev" style="margin-top:8px">${esc(JSON.stringify(a, null, 2))}</pre></details>`;
+  }
+
+  function renderLower(s, actions) {
+    $("respLog").innerHTML = actions.length ? actions.slice(0, 120).map((r) =>
+      `<li><span class="tm">${time(r.at)}</span><span class="ac">${esc(r.action)}</span><span class="st st-${esc(r.status)}">${esc(r.status)}</span><span class="dt">${esc(r.alert_id)}: ${esc(r.detail)}</span></li>`).join("")
+      : `<li><span class="dt">No automated actions yet.</span></li>`;
+    const sess = s.blocked_sessions.map((b) => `<li><span class="who">Session ${esc(b.session_id)}: ${esc(b.user)} with ${esc(b.agent)}</span><span class="why">${esc(b.reason)}</span></li>`);
+    const files = s.flagged_files.map((f) => `<li><span class="who">${esc(f.repo)}/${esc(f.path)}</span><span class="why">Flagged by ${f.alerts.map((x) => esc(x.alert_id)).join(", ")}</span></li>`);
+    $("contained").innerHTML = (sess.concat(files)).join("") || `<li><span class="why">Nothing contained yet.</span></li>`;
+  }
+
+  async function refresh() {
+    try {
+      const [stats, filtered, all, resp] = await Promise.all([
+        api("/api/stats"), api("/api/alerts?" + qs()), api("/api/alerts?limit=2000"), api("/api/responses"),
+      ]);
+      state.stats = stats; state.alerts = filtered.alerts; state.allAlerts = all.alerts;
+      renderSummary(stats); renderStrip(stats); renderFeed(); renderDetail(); renderLower(stats, resp.actions);
+      const rp = stats.replay || {};
+      $("pulse").className = "pulse" + (rp.running ? " streaming" : "");
+      $("liveText").textContent = rp.running ? `Streaming ${rp.sent} of ${rp.total} events from ${rp.file}` : `Live, ${stats.events_processed} events processed`;
+    } catch (e) {
+      $("pulse").className = "pulse off";
+      $("liveText").textContent = "Cannot reach the AgentWatch API. Check that the server is running.";
+    }
+  }
+
+  // Events
+  document.addEventListener("click", async (ev) => {
+    const cat = ev.target.closest("[data-cat]");
+    if (cat) { state.category = state.category === cat.dataset.cat ? "" : cat.dataset.cat; $("fCategory").value = state.category; return refresh(); }
+    const sev = ev.target.closest(".sevs button");
+    if (sev) { const k = sev.dataset.sev; state.sev.has(k) ? state.sev.delete(k) : state.sev.add(k); sev.setAttribute("aria-pressed", state.sev.has(k)); return refresh(); }
+    const row = ev.target.closest(".row");
+    if (row) { state.selected = row.dataset.id; state.lastDetailKey = ""; $("detail").classList.add("open"); renderFeed(); renderDetail(); return; }
+    const st = ev.target.closest("[data-status]");
+    if (st && state.selected) {
+      await api(`/api/alerts/${state.selected}/status`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: st.dataset.status }) });
+      state.lastDetailKey = ""; return refresh();
+    }
+    if (ev.target.id === "closeDetail") { $("detail").classList.remove("open"); return; }
+  });
+  $("fCategory").addEventListener("change", (e) => { state.category = e.target.value; refresh(); });
+  $("fStatus").addEventListener("change", (e) => { state.status = e.target.value; refresh(); });
+  $("fAgent").addEventListener("change", (e) => { state.agent = e.target.value; refresh(); });
+  let t; $("fQuery").addEventListener("input", (e) => { clearTimeout(t); t = setTimeout(() => { state.q = e.target.value.trim(); refresh(); }, 200); });
+  $("clearBtn").addEventListener("click", () => {
+    state.sev.clear(); state.category = state.status = state.agent = state.q = "";
+    document.querySelectorAll(".sevs button").forEach((b) => b.setAttribute("aria-pressed", "false"));
+    $("fStatus").value = ""; $("fQuery").value = ""; $("fAgent").value = ""; $("fCategory").value = ""; refresh();
+  });
+  $("replayBtn").addEventListener("click", async () => {
+    $("replayBtn").disabled = true; state.selected = null;
+    try { await api("/api/replay", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }); }
+    finally { setTimeout(() => { $("replayBtn").disabled = false; }, 1500); refresh(); }
+  });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") $("detail").classList.remove("open"); });
+
+  refresh();
+  setInterval(refresh, 2000);
+})();
+</script>
+</body>
+</html>

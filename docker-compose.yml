@@ -1,0 +1,39 @@
+# One command:  docker compose up --build
+#   Dashboard        http://localhost:8080
+#   Mock webhook     http://localhost:9000   (receives high/critical alerts)
+services:
+  agentwatch:
+    build: .
+    container_name: agentwatch
+    ports:
+      - "8080:8080"
+    environment:
+      PORT: "8080"
+      WEBHOOK_URL: "http://mock-webhook:9000/hooks/security"
+      INGEST_FILE: "/app/data/sample_agent_activity.ndjson"
+      STREAM_DELAY: "0.4"          # seconds between replayed events, so the dashboard fills live
+      OUTPUT_DIR: "/app/output"
+    volumes:
+      - ./output:/app/output       # alerts, quarantine log, flagged files, blocked sessions
+    depends_on:
+      mock-webhook:
+        condition: service_healthy
+    restart: unless-stopped
+
+  mock-webhook:
+    build: .
+    container_name: agentwatch-webhook
+    command: ["python", "-m", "mock_webhook.server"]
+    ports:
+      - "9000:9000"
+    environment:
+      PORT: "9000"
+      WEBHOOK_LOG: "/app/output/webhook_received.ndjson"
+    volumes:
+      - ./output:/app/output
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:9000/healthz',timeout=2)"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
